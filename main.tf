@@ -13,13 +13,13 @@ module "mc_transit_az_1" {
   #enable_egress_transit_firenet = true   # for dual TRansit (1 for E/W and 1 for N/S - for this one only)
 }
 
-# module "mc_firenet_az" {
-#   version        = "1.1.0"
-#   source         = "terraform-aviatrix-modules/mc-firenet/aviatrix"
-#   transit_module = module.mc_transit_az_1
-#   firewall_image = "aviatrix"
-#   fw_amount      = 2
-# }
+module "mc_firenet_az" {
+  version        = "1.3.0"
+  source         = "terraform-aviatrix-modules/mc-firenet/aviatrix"
+  transit_module = module.mc_transit_az_1
+  firewall_image = "aviatrix"
+  fw_amount      = 2
+}
 
 module "mc_spoke_az_1" {
   source     = "terraform-aviatrix-modules/mc-spoke/aviatrix"
@@ -57,7 +57,7 @@ module "spoke_1_vm2" {
   ssh_key              = var.ssh_key
   enable_password_auth = true
   az_linux_password    = "Alamakota$123"
-  public_ip            = true
+  public_ip            = false
   depends_on = [
     module.mc_spoke_az_1
   ]
@@ -80,53 +80,54 @@ module "mc_transit_aws_1" {
 
 module "mc_firenet_aws" {
   source         = "terraform-aviatrix-modules/mc-firenet/aviatrix"
-  version        = "1.0.2"
+  version        = "1.3.0"
   transit_module = module.mc_transit_aws_1
   firewall_image = "aviatrix"
   fw_amount      = 2
 }
 
-module "mc_spoke_aws_1" {
-  source     = "terraform-aviatrix-modules/mc-spoke/aviatrix"
-  cloud      = "AWS"
-  ha_gw      = false
-  account    = var.avx_ctrl_account_aws
-  cidr       = "10.152.0.0/16"
-  name       = "${local.env_prefix}-aws-spoke1"
-  region     = "eu-west-1"
-  transit_gw = module.mc_transit_aws_1.transit_gateway.gw_name
+# module "mc_spoke_aws_1" {
+#   source     = "terraform-aviatrix-modules/mc-spoke/aviatrix"
+#   cloud      = "AWS"
+#   ha_gw      = false
+#   account    = var.avx_ctrl_account_aws
+#   cidr       = "10.152.0.0/16"
+#   name       = "${local.env_prefix}-aws-spoke1"
+#   region     = "eu-west-1"
+#   transit_gw = module.mc_transit_aws_1.transit_gateway.gw_name
 
-}
-
-# data "template_file" "bastion_spoke1_user_data" {
-#     template = file("${path.module}/scripts/aws_bootstrap.sh")
-#     vars = {
-#         name     = "Spoke1_Bastion"
-#         password = var.bastion_password
-#     }
 # }
 
-# module "aws_spoke1_bastion" {
-#     source                      = "terraform-aws-modules/ec2-instance/aws"
-#     version                     = "2.21.0"
-#     instance_type               = var.aws_spoke1_bastion_instance_size
-#     name                        = "${var.avx_aws_uk_spoke1_bastion_name}-bastion"
-#     ami                         = data.aws_ami.ubuntu.id
-#     instance_count              = 1
-#     subnet_id                   = module.aws_spoke_1.vpc.public_subnets[0].subnet_id
-#     vpc_security_group_ids      = [module.aws_bastion_nsg.this_security_group_id]
-#     associate_public_ip_address = true
-#     user_data_base64            = base64encode(data.template_file.bastion_spoke1_user_data.rendered)
-#     providers = {
-#         aws = aws.uk
-#     }
-# }
+# # data "template_file" "bastion_spoke1_user_data" {
+# #     template = file("${path.module}/scripts/aws_bootstrap.sh")
+# #     vars = {
+# #         name     = "Spoke1_Bastion"
+# #         password = var.bastion_password
+# #     }
+# # }
 
-# #--------------------------------------------------------------------------
+# # module "aws_spoke1_bastion" {
+# #     source                      = "terraform-aws-modules/ec2-instance/aws"
+# #     version                     = "2.21.0"
+# #     instance_type               = var.aws_spoke1_bastion_instance_size
+# #     name                        = "${var.avx_aws_uk_spoke1_bastion_name}-bastion"
+# #     ami                         = data.aws_ami.ubuntu.id
+# #     instance_count              = 1
+# #     subnet_id                   = module.aws_spoke_1.vpc.public_subnets[0].subnet_id
+# #     vpc_security_group_ids      = [module.aws_bastion_nsg.this_security_group_id]
+# #     associate_public_ip_address = true
+# #     user_data_base64            = base64encode(data.template_file.bastion_spoke1_user_data.rendered)
+# #     providers = {
+# #         aws = aws.uk
+# #     }
+# # }
+
+# # #--------------------------------------------------------------------------
 
 module "transit_peerings" {
 
   source = "terraform-aviatrix-modules/mc-transit-peering/aviatrix"
+  #nonesensitive is needed as Dennis change this mode and marked outputs as sensitive which is causing issue now
   transit_gateways = [
     module.mc_transit_aws_1.transit_gateway.gw_name,
     module.mc_transit_az_1.transit_gateway.gw_name
@@ -136,4 +137,4 @@ module "transit_peerings" {
   # ]
 }
 
-# #--------------------------------------------------------------------------
+# # #--------------------------------------------------------------------------
